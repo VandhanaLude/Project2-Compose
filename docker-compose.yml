@@ -1,0 +1,25 @@
+version: '3.8'  # Specifies the version of the Docker Compose file format.
+
+services:  # Defines the services (containers) that will be run.
+  dind:  # Service for Docker-in-Docker
+    image: docker:dind  # The Docker image for DinD.
+    privileged: true  # Allows the container to run in privileged mode.
+    networks:
+      - jenkins_network  # Connects to the specified network.
+
+  jenkins:  # Service for Jenkins
+    image: jenkins/jenkins:lts  # The official Jenkins long-term support image.
+    environment:
+      DOCKER_HOST: tcp://dind:2376  # Sets the Docker host for Jenkins to connect to DinD.
+    volumes:
+      - jenkins_home:/var/jenkins_home  # Mounts a volume for persistent Jenkins data.
+    ports:
+      - "8080:8080"  # Exposes Jenkins on port 8080.
+    networks:
+      - jenkins_network  # Connects to the specified network.
+
+volumes:  # Defines named volumes for data persistence.
+  jenkins_home:  # Volume for Jenkins data.
+
+networks:  # Defines custom networks for container communication.
+  jenkins_network:  # Custom network for Jenkins and DinD to communicate.
