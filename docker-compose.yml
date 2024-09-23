@@ -14,7 +14,9 @@ services:
 
   # Jenkins service
   jenkins:
-    image: custom-jenkins:latest
+    build:
+      context: ./  # Build from the current directory where the Dockerfile is located
+      dockerfile: Dockerfile  # Specify the Dockerfile
     environment:
       DOCKER_HOST: tcp://dind:2375  # Tell Jenkins to use the Docker daemon from the DinD container
     volumes:
@@ -25,6 +27,18 @@ services:
       - jenkins_network  # Connects to the specified network
     depends_on:
       - dind  # Ensures that the DinD container starts first
+
+  # Your Express.js application service
+  express-app:
+    build:
+      context: ../aws-elastic-beanstalk-express-js-sample  # Path to your Express.js app
+      dockerfile: Dockerfile  # Specify your app's Dockerfile if needed
+    ports:
+      - "3000:3000"  # Exposes the app on port 3000
+    networks:
+      - jenkins_network  # Connects to the same network
+    depends_on:
+      - dind  # Ensure DinD is up before starting the app
 
 # Persistent storage volumes
 volumes:
