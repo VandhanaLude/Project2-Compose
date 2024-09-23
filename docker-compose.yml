@@ -1,25 +1,36 @@
-version: '3.8'  # Specifies the version of the Docker Compose file format.
+version: '3.8'
 
-services:  # Defines the services (containers) that will be run.
-  dind:  # Service for Docker-in-Docker
-    image: docker:dind  # The Docker image for DinD.
-    privileged: true  # Allows the container to run in privileged mode.
+services:
+  # Docker-in-Docker service
+  dind:
+    image: docker:dind
+    privileged: true  # Run in privileged mode to allow DinD
     networks:
-      - jenkins_network  # Connects to the specified network.
-
-  jenkins:  # Service for Jenkins
-    image: jenkins/jenkins:lts  # The official Jenkins long-term support image.
+      - jenkins_network
     environment:
-      DOCKER_HOST: tcp://dind:2376  # Sets the Docker host for Jenkins to connect to DinD.
+      DOCKER_TLS_CERTDIR: ""  # Disables TLS since it's local
     volumes:
-      - jenkins_home:/var/jenkins_home  # Mounts a volume for persistent Jenkins data.
+      - dind-storage:/var/lib/docker  # Persistent Docker storage for Docker data
+
+  # Jenkins service
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
+    environment:
+      DOCKER_HOST: tcp://dind:2375  # Tell Jenkins to use the Docker daemon from the DinD container
+    volumes:
+      - jenkins_home:/var/jenkins_home  # Persistent storage for Jenkins
     ports:
-      - "8080:8080"  # Exposes Jenkins on port 8080.
+      - "8080:8080"  # Exposes Jenkins on port 8080
     networks:
-      - jenkins_network  # Connects to the specified network.
+      - jenkins_network  # Connects to the specified network
+    depends_on:
+      - dind  # Ensures that the DinD container starts first
 
-volumes:  # Defines named volumes for data persistence.
-  jenkins_home:  # Volume for Jenkins data.
+# Persistent storage volumes
+volumes:
+  jenkins_home:  # Named volume for Jenkins data (automatically created)
+  dind-storage:  # Named volume for Docker-in-Docker data (automatically created)
 
-networks:  # Defines custom networks for container communication.
-  jenkins_network:  # Custom network for Jenkins and DinD to communicate.
+# Network configuration
+networks:
+  jenkins_network:  # Custom network for communication between Jenkins and DinD
